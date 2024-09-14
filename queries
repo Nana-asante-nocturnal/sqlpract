@@ -1,0 +1,60 @@
+
+SELECT E.Fname, E.Lname
+FROM EMPLOYEE E
+JOIN WORKS_ON WO ON E.Ssn = WO.Essn
+JOIN PROJECT P ON WO.Pno = P.Pnumber
+JOIN EMPLOYEE Sup ON E.ssn = Sup.Ssn
+WHERE P.Pname IN ('ProductX', 'Computerization', 'Newbenefits')
+  AND E.Salary > Sup.Salary;
+
+
+
+  SELECT E.Fname AS EmployeeFirstName, E.Lname AS EmployeeLastName,
+       Sup.Fname AS SupervisorFirstName, Sup.Lname AS SupervisorLastName,
+       D.Dname AS DepartmentName
+FROM EMPLOYEE E
+JOIN DEPARTMENT D ON E.Dno = D.Dnumber
+JOIN EMPLOYEE Sup ON E.ssn = Sup.Ssn
+WHERE E.Salary < (SELECT AVG(E2.Salary)
+                  FROM EMPLOYEE E2
+                  WHERE E2.Dno = (SELECT Dnumber FROM DEPARTMENT WHERE Dname = 'Software'))
+ORDER BY E.Lname, E.Fname;
+
+
+
+SELECT E.Fname AS EmployeeFirstName, E.Lname AS EmployeeLastName,
+       COUNT(W.Pno) AS ProjectCount
+FROM EMPLOYEE E
+JOIN WORKS_ON W ON E.Ssn = W.Essn
+GROUP BY E.Ssn, E.Fname, E.Lname
+HAVING COUNT(W.Pno) > (SELECT AVG(ProjectCount)
+                       FROM (SELECT COUNT(W2.Pno) AS ProjectCount
+                             FROM EMPLOYEE E2
+                             JOIN WORKS_ON W2 ON E2.Ssn = W2.Essn
+                             GROUP BY E2.Ssn) AS AvgProjectCount)
+ORDER BY E.Lname, E.Fname;
+
+
+SELECT DISTINCT E.Fname, E.Lname
+FROM EMPLOYEE E
+JOIN WORKS_ON W ON E.Ssn = W.Essn
+JOIN PROJECT P ON W.Pno = P.Pnumber
+WHERE P.Pname IN ('Middleware', 'Computerization', 'Newbenefits', 'OperatingSystems')
+ORDER BY E.Lname, E.Fname;
+
+
+
+WITH HighestPaidEmployees AS (
+    SELECT D.Dname AS Department,
+           E.Fname,
+           E.Lname,
+           E.Salary,
+           ROW_NUMBER() OVER (PARTITION BY E.Dno ORDER BY E.Salary DESC) AS RowNumber
+    FROM EMPLOYEE E
+    JOIN DEPARTMENT D ON E.Dno = D.Dnumber
+)
+
+SELECT Department, Fname, Lname, Salary
+FROM HighestPaidEmployees
+WHERE RowNumber = 1
+ORDER BY Department;
